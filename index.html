@@ -354,24 +354,21 @@
         let answerHistory = [];
         let historyIndex = -1;
         let unknownCards = new Set();
-
+    
         function showImages(event, side) {
-    event.stopPropagation();
-    const word = side === 'front' ? 
-        cards[currentCard].front : 
-        cards[currentCard].back;
-
-    // Construire l'URL de recherche Google Image
-    const query = encodeURIComponent(word);
-    const url = `https://www.google.com/search?hl=fr&sca_esv=d6ba4ffd1822b257&sxsrf=ADLYWILC-0mm-sQcTXnBsearND5PLzgz8g:1730869470293&q=${query}&udm=2&fbs=AEQNm0DRAbCgKinxH2Th7hgqcyuqHLoeyqOEeOQ4T1go8XdYDlBywS3uc9kjDxCZ7v1bWCQpS26RGd-drAXyzxn4wPglNjORX_PgW1hqN0FmOaWaOQLJFDs_NVpVjZys06LnYiDMo7Oh4trdIgwYXutOQsEk6IURf3pT6G6VBVxkWnC4KoaACabb1lcQYjamX-MLkNVGNupktyio4bNK_CB0jWIvLsLDTw&sa=X&ved=2ahUKEwj6tLef98aJAxVCE1kFHcyDH5AQtKgLegQIFhAB&biw=1512&bih=857&dpr=2`;
-
-    // Ouvrir un nouvel onglet avec les résultats de la recherche d'images
-    window.open(url, '_blank');
-}
-
-
-        
-
+            event.stopPropagation();
+            const word = side === 'front' ? 
+                cards[currentCard].front : 
+                cards[currentCard].back;
+    
+            // Construire l'URL de recherche Google Image
+            const query = encodeURIComponent(word);
+            const url = `https://www.google.com/search?hl=fr&sca_esv=d6ba4ffd1822b257&sxsrf=ADLYWILC-0mm-sQcTXnBsearND5PLzgz8g:1730869470293&q=${query}&udm=2&fbs=AEQNm0DRAbCgKinxH2Th7hgqcyuqHLoeyqOEeOQ4T1go8XdYDlBywS3uc9kjDxCZ7v1bWCQpS26RGd-drAXyzxn4wPglNjORX_PgW1hqN0FmOaWaOQLJFDs_NVpVjZys06LnYiDMo7Oh4trdIgwYXutOQsEk6IURf3pT6G6VBVxkWnC4KoaACabb1lcQYjamX-MLkNVGNupktyio4bNK_CB0jWIvLsLDTw&sa=X&ved=2ahUKEwj6tLef98aJAxVCE1kFHcyDH5AQtKgLegQIFhAB&biw=1512&bih=857&dpr=2`;
+    
+            // Ouvrir un nouvel onglet avec les résultats de la recherche d'images
+            window.open(url, '_blank');
+        }
+    
         function gotoCard() {
             const cardNum = parseInt(document.getElementById('gotoInput').value);
             if (cardNum > 0 && cardNum <= cards.length) {
@@ -380,19 +377,21 @@
                 document.getElementById('gotoInput').value = '';
             }
         }
-
+    
         function markAsKnown() {
             cards[currentCard].status = 'known';
             unknownCards.delete(currentCard);
             nextCard();
+            saveCardsToLocalStorage();
         }
-
+    
         function markAsUnknown() {
             cards[currentCard].status = 'unknown';
             unknownCards.add(currentCard);
             nextCard();
+            saveCardsToLocalStorage();
         }
-
+    
         function reviewUnknown() {
             if (unknownCards.size > 0) {
                 const unknownArray = Array.from(unknownCards);
@@ -400,25 +399,26 @@
                 showCard(currentCard);
             }
         }
-
+    
         function resetAll() {
             if (confirm('Voulez-vous vraiment réinitialiser toutes les cartes ?')) {
                 cards.forEach(card => card.status = 'new');
                 unknownCards.clear();
                 currentCard = 0;
                 showCard(currentCard);
+                saveCardsToLocalStorage();
             }
         }
-
+    
         function showCard(index) {
             const card = cards[index];
             const displayOrder = document.getElementById('displayOrderSelect').value;
             const frontElement = document.querySelector('.flashcard-front .card-content');
             const backElement = document.querySelector('.flashcard-back .card-content');
             const flashcard = document.getElementById('flashcard');
-
+    
             flashcard.classList.remove('flipped');
-
+    
             if (displayOrder === 'front') {
                 frontElement.textContent = card.front;
                 backElement.textContent = card.back;
@@ -426,7 +426,7 @@
                 frontElement.textContent = card.back;
                 backElement.textContent = card.front;
             }
-
+    
             // Mettre à jour le style en fonction du statut
             updateCardStyle(card.status);
             updateAudioHandlers(displayOrder);
@@ -437,7 +437,7 @@
             updateNavButtons();
             updateProgress();
         }
-
+    
         function updateCardStyle(status) {
             const flashcard = document.getElementById('flashcard');
             flashcard.className = 'flashcard'; // Reset classes
@@ -449,11 +449,11 @@
                 flashcard.classList.add('unknown-card');
             }
         }
-
+    
         function updateAudioHandlers(displayOrder) {
             const frontAudio = document.querySelector('.flashcard-front .icon-button');
             const backAudio = document.querySelector('.flashcard-back .icon-button');
-
+    
             frontAudio.onclick = (e) => {
                 e.stopPropagation();
                 const text = displayOrder === 'front' ? 
@@ -464,7 +464,7 @@
                     document.getElementById('backLanguageSelect').value;
                 playAudio(e, text, language);
             };
-
+    
             backAudio.onclick = (e) => {
                 e.stopPropagation();
                 const text = displayOrder === 'front' ? 
@@ -476,17 +476,18 @@
                 playAudio(e, text, language);
             };
         }
-
+    
         function playAudio(event, text, language) {
             const utterance = new SpeechSynthesisUtterance(text);
             utterance.lang = language;
             speechSynthesis.speak(utterance);
-
+    
             const button = event.target.closest('.icon-button');
             button.style.transform = 'scale(0.9)';
             setTimeout(() => button.style.transform = '', 200);
         }
-
+    
+        // Fonction pour parser le fichier CSV et convertir en objets cartes
         function parseCSV(content) {
             const lines = content.split('\n');
             cards = lines.map(line => {
@@ -502,61 +503,58 @@
             unknownCards.clear();
             updateCardCount();
             showCard(currentCard);
+            saveCardsToLocalStorage(); // Sauvegarder les cartes après importation
         }
-
-        document.getElementById('csvFile').addEventListener('change', function(event) {
-            const file = event.target.files[0];
-            if (file) {
-                const reader = new FileReader();
-                reader.onload = function(e) {
-                    const content = e.target.result;
-                    parseCSV(content);
-                };
-                reader.readAsText(file);
+    
+        // Charger les cartes depuis le LocalStorage (si elles existent)
+        function loadCardsFromLocalStorage() {
+            const savedCards = localStorage.getItem('flashcards');
+            if (savedCards) {
+                cards = JSON.parse(savedCards);
+            } else {
+                cards = [
+                    { front: "Bonjour", back: "Hello", status: 'new' },
+                    { front: "Chat", back: "Cat", status: 'new' },
+                    { front: "Chien", back: "Dog", status: 'new' },
+                    { front: "Maison", back: "House", status: 'new' }
+                ];
             }
-        });
-
-        document.getElementById('flashcard').addEventListener('click', function() {
-            this.classList.toggle('flipped');
-        });
-
-        // Fermer le modal quand on clique en dehors
-        document.getElementById('imageModal').addEventListener('click', function(e) {
-            if (e.target === this) {
-                closeImageModal();
+            updateCardCount();
+            if (cards.length > 0) {
+                showCard(0); // Affiche la première carte si des cartes existent
             }
-        });
-
-        // Empêcher la fermeture quand on clique dans le modal
-        document.querySelector('.modal-content').addEventListener('click', function(e) {
-            e.stopPropagation();
-        });
-
+        }
+    
+        // Sauvegarder les cartes dans le localStorage
+        function saveCardsToLocalStorage() {
+            localStorage.setItem('flashcards', JSON.stringify(cards));
+        }
+    
         function updateNavButtons() {
             document.getElementById('prevBtn').disabled = currentCard === 0;
             document.getElementById('nextBtn').disabled = currentCard === cards.length - 1;
         }
-
+    
         function updateProgress() {
             const progress = ((currentCard + 1) / cards.length) * 100;
             document.querySelector('.progress-bar').style.width = `${progress}%`;
             document.querySelector('.progress-bar').setAttribute('aria-valuenow', progress);
         }
-
+    
         function prevCard() {
             if (currentCard > 0) {
                 currentCard--;
                 showCard(currentCard);
             }
         }
-
+    
         function nextCard() {
             if (currentCard < cards.length - 1) {
                 currentCard++;
                 showCard(currentCard);
             }
         }
-
+    
         function undo() {
             if (historyIndex > 0) {
                 historyIndex--;
@@ -564,7 +562,7 @@
                 document.getElementById('answerFeedback').textContent = '';
             }
         }
-
+    
         function redo() {
             if (historyIndex < answerHistory.length - 1) {
                 historyIndex++;
@@ -572,45 +570,65 @@
                 document.getElementById('answerFeedback').textContent = '';
             }
         }
-
+    
         function clearAnswer() {
             document.getElementById('answerInput').value = '';
             document.getElementById('answerFeedback').textContent = '';
         }
-
+    
         function updateCardCount() {
             document.getElementById('totalCards').textContent = cards.length;
         }
-
+    
         // Initialisation
-        document.addEventListener('DOMContentLoaded', function() {
-            updateCardCount();
-            showCard(0);
+        document.addEventListener('DOMContentLoaded', function () {
+    // Charger les cartes du localStorage
+    loadCardsFromLocalStorage();
 
-            // Ajouter les raccourcis clavier
-            document.addEventListener('keydown', function(e) {
-                if (e.target.tagName !== 'INPUT') { // Ne pas interférer avec la saisie
-                    switch(e.key) {
-                        case 'ArrowLeft':
-                            prevCard();
-                            break;
-                        case 'ArrowRight':
-                            nextCard();
-                            break;
-                        case ' ':
-                            document.getElementById('flashcard').classList.toggle('flipped');
-                            e.preventDefault();
-                            break;
-                        case 'k':
-                            markAsKnown();
-                            break;
-                        case 'u':
-                            markAsUnknown();
-                            break;
-                    }
-                }
-            });
-        });
+    // Ajouter l'événement de clic pour retourner la carte
+    document.getElementById('flashcard').addEventListener('click', function () {
+        this.classList.toggle('flipped');
+    });
+
+    // Ajouter les raccourcis clavier
+    document.addEventListener('keydown', function (e) {
+        if (e.target.tagName !== 'INPUT') { // Ne pas interférer avec la saisie
+            switch (e.key) {
+                case 'ArrowLeft':
+                    prevCard();
+                    break;
+                case 'ArrowRight':
+                    nextCard();
+                    break;
+                case ' ':
+                    document.getElementById('flashcard').classList.toggle('flipped');
+                    e.preventDefault();
+                    break;
+                case 'k':
+                    markAsKnown();
+                    break;
+                case 'u':
+                    markAsUnknown();
+                    break;
+            }
+        }
+    });
+
+    // Gérer l'importation du fichier CSV
+    document.getElementById('csvFile').addEventListener('change', function (event) {
+        const file = event.target.files[0];
+        if (file) {
+            const reader = new FileReader();
+            reader.onload = function (e) {
+                const content = e.target.result;
+                parseCSV(content);
+            };
+            reader.readAsText(file);
+        }
+    });
+});
+
     </script>
+    
 </body>
 </html>
