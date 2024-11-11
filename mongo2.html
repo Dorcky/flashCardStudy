@@ -1,0 +1,322 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Flashcards App</title>
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/bootstrap/5.3.2/css/bootstrap.min.css" rel="stylesheet">
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.2/css/all.min.css" rel="stylesheet">
+    <style>
+        :root {
+            --primary-color: #4a90e2;
+            --secondary-color: #f5f6fa;
+            --accent-color: #5c7cfa;
+            --success-color: #2ecc71;
+            --warning-color: #e74c3c;
+        }
+
+        body {
+            background: linear-gradient(135deg, #f5f7fa 0%, #e4e8f0 100%);
+            min-height: 100vh;
+            padding: 20px;
+        }
+
+        .flashcard {
+            perspective: 1000px;
+            height: 300px;
+        }
+
+        .flashcard-inner {
+            position: relative;
+            width: 100%;
+            height: 100%;
+            transition: transform 0.8s;
+            transform-style: preserve-3d;
+            cursor: pointer;
+        }
+
+        .flashcard.flipped .flashcard-inner {
+            transform: rotateY(180deg);
+        }
+
+        .flashcard-front, .flashcard-back {
+            position: absolute;
+            width: 100%;
+            height: 100%;
+            backface-visibility: hidden;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            flex-direction: column;
+            background: white;
+            border-radius: 15px;
+            box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+            padding: 20px;
+        }
+
+        .flashcard-back {
+            transform: rotateY(180deg);
+        }
+
+        .control-icons {
+            display: flex;
+            gap: 15px;
+            margin-top: 15px;
+        }
+
+        .icon-button {
+            width: 40px;
+            height: 40px;
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            color: white;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            background: var(--primary-color);
+        }
+
+        .icon-button:hover {
+            transform: scale(1.1);
+        }
+
+        .card-content {
+            font-size: 2rem;
+            margin-bottom: 1rem;
+            text-align: center;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <!-- Header -->
+        <div class="row mb-4">
+            <div class="col-12">
+                <div class="d-flex justify-content-between align-items-center flex-wrap gap-3">
+                    <div class="d-flex gap-3 align-items-center">
+                        <button class="btn btn-primary" data-bs-toggle="modal" data-bs-target="#addCardModal">
+                            <i class="fas fa-plus me-2"></i>Nouvelle carte
+                        </button>
+
+                        <select class="form-select" style="width: auto;" id="frontLanguageSelect">
+                            <option value="fr">Français</option>
+                            <option value="en">English</option>
+                        </select>
+
+                        <select class="form-select" style="width: auto;" id="backLanguageSelect">
+                            <option value="en">English</option>
+                            <option value="fr">Français</option>
+                        </select>
+                    </div>
+
+                    <div class="badge bg-primary">
+                        Carte <span id="currentCardNum">1</span> / <span id="totalCards">0</span>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Flashcard -->
+        <div class="row mb-4">
+            <div class="col-12">
+                <div class="flashcard" id="flashcard">
+                    <div class="flashcard-inner">
+                        <div class="flashcard-front">
+                            <div class="card-content">Chargement...</div>
+                            <div class="control-icons">
+                                <div class="icon-button" onclick="playAudio('front')">
+                                    <i class="fas fa-volume-up"></i>
+                                </div>
+                                <div class="icon-button" onclick="showImages('front')">
+                                    <i class="fas fa-camera"></i>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="flashcard-back">
+                            <div class="card-content">Loading...</div>
+                            <div class="control-icons">
+                                <div class="icon-button" onclick="playAudio('back')">
+                                    <i class="fas fa-volume-up"></i>
+                                </div>
+                                <div class="icon-button" onclick="showImages('back')">
+                                    <i class="fas fa-camera"></i>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Navigation -->
+        <div class="row">
+            <div class="col-12">
+                <div class="d-flex justify-content-between gap-3">
+                    <button class="btn btn-primary" onclick="prevCard()" id="prevBtn">
+                        <i class="fas fa-chevron-left me-2"></i>Précédent
+                    </button>
+                    <button class="btn btn-primary" onclick="nextCard()" id="nextBtn">
+                        Suivant<i class="fas fa-chevron-right ms-2"></i>
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Modal d'ajout de carte -->
+    <div class="modal fade" id="addCardModal" tabindex="-1">
+        <div class="modal-dialog">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h5 class="modal-title">Ajouter une nouvelle carte</h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+                </div>
+                <div class="modal-body">
+                    <form id="addCardForm">
+                        <div class="mb-3">
+                            <label class="form-label">Français</label>
+                            <input type="text" class="form-control" id="frenchInput" required>
+                        </div>
+                        <div class="mb-3">
+                            <label class="form-label">Anglais</label>
+                            <input type="text" class="form-control" id="englishInput" required>
+                        </div>
+                    </form>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Annuler</button>
+                    <button type="button" class="btn btn-primary" onclick="addCard()">Ajouter</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/bootstrap/5.3.2/js/bootstrap.bundle.min.js"></script>
+    <script>
+        const API_URL = 'http://localhost:5006/api/flashcards';
+        let currentCard = 0;
+        let cards = [];
+
+        // Charger les cartes depuis l'API
+        async function loadCards() {
+            try {
+                const response = await fetch(API_URL);
+                cards = await response.json();
+                document.getElementById('totalCards').textContent = cards.length;
+                if (cards.length > 0) {
+                    showCard(0);
+                }
+            } catch (error) {
+                console.error('Erreur lors du chargement des cartes:', error);
+                alert('Erreur lors du chargement des cartes');
+            }
+        }
+
+        // Ajouter une nouvelle carte
+        async function addCard() {
+            const french = document.getElementById('frenchInput').value;
+            const english = document.getElementById('englishInput').value;
+
+            try {
+                const response = await fetch(API_URL, {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                    },
+                    body: JSON.stringify({ Francais: french, Anglais: english })
+                });
+
+                if (response.ok) {
+                    bootstrap.Modal.getInstance(document.getElementById('addCardModal')).hide();
+                    document.getElementById('addCardForm').reset();
+                    await loadCards();
+                }
+            } catch (error) {
+                console.error('Erreur lors de l\'ajout de la carte:', error);
+                alert('Erreur lors de l\'ajout de la carte');
+            }
+        }
+
+        function showCard(index) {
+            if (cards.length === 0) return;
+
+            const card = cards[index];
+            const frontElement = document.querySelector('.flashcard-front .card-content');
+            const backElement = document.querySelector('.flashcard-back .card-content');
+            
+            document.getElementById('flashcard').classList.remove('flipped');
+            frontElement.textContent = card.Francais;
+            backElement.textContent = card.Anglais;
+            
+            document.getElementById('currentCardNum').textContent = index + 1;
+            updateNavButtons();
+        }
+
+        function updateNavButtons() {
+            document.getElementById('prevBtn').disabled = currentCard === 0;
+            document.getElementById('nextBtn').disabled = currentCard === cards.length - 1;
+        }
+
+        function prevCard() {
+            if (currentCard > 0) {
+                currentCard--;
+                showCard(currentCard);
+            }
+        }
+
+        function nextCard() {
+            if (currentCard < cards.length - 1) {
+                currentCard++;
+                showCard(currentCard);
+            }
+        }
+
+        function playAudio(side) {
+            const text = side === 'front' ? 
+                cards[currentCard].Francais : 
+                cards[currentCard].Anglais;
+            const lang = side === 'front' ? 'fr-FR' : 'en-US';
+            
+            const utterance = new SpeechSynthesisUtterance(text);
+            utterance.lang = lang;
+            speechSynthesis.speak(utterance);
+        }
+
+        function showImages(side) {
+            const word = side === 'front' ? 
+                cards[currentCard].Francais : 
+                cards[currentCard].Anglais;
+            const query = encodeURIComponent(word);
+            window.open(`https://www.google.com/search?tbm=isch&q=${query}`, '_blank');
+        }
+
+        // Initialisation
+        document.addEventListener('DOMContentLoaded', function() {
+            loadCards();
+
+            document.getElementById('flashcard').addEventListener('click', function() {
+                this.classList.toggle('flipped');
+            });
+
+            // Raccourcis clavier
+            document.addEventListener('keydown', function(e) {
+                if (e.target.tagName !== 'INPUT') {
+                    switch (e.key) {
+                        case 'ArrowLeft':
+                            prevCard();
+                            break;
+                        case 'ArrowRight':
+                            nextCard();
+                            break;
+                        case ' ':
+                            document.getElementById('flashcard').classList.toggle('flipped');
+                            e.preventDefault();
+                            break;
+                    }
+                }
+            });
+        });
+    </script>
+</body>
+</html>

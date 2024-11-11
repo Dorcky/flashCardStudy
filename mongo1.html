@@ -1,0 +1,196 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Flashcards Français/Anglais</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0-alpha1/dist/css/bootstrap.min.css" rel="stylesheet">
+    <style>
+        .flashcard {
+            cursor: pointer;
+            height: 200px;
+            perspective: 1000px;
+        }
+        .flashcard-inner {
+            position: relative;
+            width: 100%;
+            height: 100%;
+            text-align: center;
+            transition: transform 0.6s;
+            transform-style: preserve-3d;
+        }
+        .flashcard:hover .flashcard-inner {
+            transform: rotateY(180deg);
+        }
+        .flashcard-front, .flashcard-back {
+            position: absolute;
+            width: 100%;
+            height: 100%;
+            backface-visibility: hidden;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 1.5rem;
+            border-radius: 10px;
+        }
+        .flashcard-front {
+            background-color: #f8f9fa;
+            color: #212529;
+        }
+        .flashcard-back {
+            background-color: #212529;
+            color: #f8f9fa;
+            transform: rotateY(180deg);
+        }
+    </style>
+</head>
+<body>
+    <div class="container mt-5">
+        <h1 class="text-center mb-4">Flashcards Français/Anglais</h1>
+        
+        <!-- Formulaire pour ajouter une nouvelle flashcard -->
+        <div class="row mb-4">
+            <div class="col-md-6 offset-md-3">
+                <form id="addFlashcardForm">
+                    <div class="mb-3">
+                        <input type="text" class="form-control" id="francaisInput" placeholder="Mot en français" required>
+                    </div>
+                    <div class="mb-3">
+                        <input type="text" class="form-control" id="anglaisInput" placeholder="Mot en anglais" required>
+                    </div>
+                    <button type="submit" class="btn btn-primary w-100">Ajouter une flashcard</button>
+                </form>
+            </div>
+        </div>
+
+        <!-- Conteneur pour les flashcards -->
+        <div id="flashcardsContainer" class="row row-cols-1 row-cols-md-3 g-4">
+            <!-- Les flashcards seront insérées ici dynamiquement -->
+        </div>
+    </div>
+
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0-alpha1/dist/js/bootstrap.bundle.min.js"></script>
+    <script>
+        const API_URL = 'http://localhost:5006/api/flashcards';
+
+        // Fonction pour charger les flashcards
+        async function loadFlashcards() {
+            try {
+                const response = await fetch(API_URL);
+                const flashcards = await response.json();
+                const container = document.getElementById('flashcardsContainer');
+                container.innerHTML = '';
+                flashcards.forEach(flashcard => {
+                    container.innerHTML += `
+                        <div class="col">
+                            <div class="flashcard" data-id="${flashcard._id}">
+                                <div class="flashcard-inner">
+                                    <div class="flashcard-front">
+                                        <p>${flashcard.Francais}</p>
+                                    </div>
+                                    <div class="flashcard-back">
+                                        <p>${flashcard.Anglais}</p>
+                                    </div>
+                                </div>
+                            </div>
+                            <div class="mt-2">
+                                <button class="btn btn-sm btn-outline-primary edit-btn">Modifier</button>
+                                <button class="btn btn-sm btn-outline-danger delete-btn">Supprimer</button>
+                            </div>
+                        </div>
+                    `;
+                });
+                addEventListeners();
+            } catch (error) {
+                console.error('Erreur lors du chargement des flashcards:', error);
+            }
+        }
+
+        // Fonction pour ajouter une nouvelle flashcard
+        async function addFlashcard(event) {
+            event.preventDefault();
+            const francais = document.getElementById('francaisInput').value;
+            const anglais = document.getElementById('anglaisInput').value;
+            try {
+                const response = await fetch(API_URL, {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                    },
+                    body: JSON.stringify({ Francais: francais, Anglais: anglais }),
+                });
+                if (response.ok) {
+                    loadFlashcards();
+                    document.getElementById('addFlashcardForm').reset();
+                }
+            } catch (error) {
+                console.error('Erreur lors de l\'ajout de la flashcard:', error);
+            }
+        }
+
+        // Fonction pour modifier une flashcard
+        async function editFlashcard(id, francais, anglais) {
+            try {
+                const response = await fetch(`${API_URL}/${id}`, {
+                    method: 'PUT',
+                    headers: {
+                        'Content-Type': 'application/json',
+                    },
+                    body: JSON.stringify({ Francais: francais, Anglais: anglais }),
+                });
+                if (response.ok) {
+                    loadFlashcards();
+                }
+            } catch (error) {
+                console.error('Erreur lors de la modification de la flashcard:', error);
+            }
+        }
+
+        // Fonction pour supprimer une flashcard
+        async function deleteFlashcard(id) {
+            try {
+                const response = await fetch(`${API_URL}/${id}`, {
+                    method: 'DELETE',
+                });
+                if (response.ok) {
+                    loadFlashcards();
+                }
+            } catch (error) {
+                console.error('Erreur lors de la suppression de la flashcard:', error);
+            }
+        }
+
+        // Ajouter des écouteurs d'événements
+        function addEventListeners() {
+            document.querySelectorAll('.edit-btn').forEach(btn => {
+                btn.addEventListener('click', function() {
+                    const flashcard = this.closest('.col').querySelector('.flashcard');
+                    const id = flashcard.dataset.id;
+                    const francais = flashcard.querySelector('.flashcard-front p').textContent;
+                    const anglais = flashcard.querySelector('.flashcard-back p').textContent;
+                    const newFrancais = prompt('Nouveau mot en français:', francais);
+                    const newAnglais = prompt('Nouveau mot en anglais:', anglais);
+                    if (newFrancais && newAnglais) {
+                        editFlashcard(id, newFrancais, newAnglais);
+                    }
+                });
+            });
+
+            document.querySelectorAll('.delete-btn').forEach(btn => {
+                btn.addEventListener('click', function() {
+                    const id = this.closest('.col').querySelector('.flashcard').dataset.id;
+                    if (confirm('Êtes-vous sûr de vouloir supprimer cette flashcard ?')) {
+                        deleteFlashcard(id);
+                    }
+                });
+            });
+        }
+
+        // Charger les flashcards au chargement de la page
+        document.addEventListener('DOMContentLoaded', loadFlashcards);
+
+        // Ajouter un écouteur d'événements pour le formulaire d'ajout
+        document.getElementById('addFlashcardForm').addEventListener('submit', addFlashcard);
+    </script>
+</body>
+</html>
