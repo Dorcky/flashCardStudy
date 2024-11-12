@@ -1,0 +1,328 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Flashcards - Apprentissage de langues</title>
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/bootstrap/5.3.2/css/bootstrap.min.css" rel="stylesheet">
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.2/css/all.min.css" rel="stylesheet">
+    <style>
+        :root {
+            --primary-color: #4a90e2;
+            --secondary-color: #f5f6fa;
+            --accent-color: #5c7cfa;
+            --success-color: #2ecc71;
+            --warning-color: #e74c3c;
+        }
+
+        body {
+            background: linear-gradient(135deg, #f5f7fa 0%, #e4e8f0 100%);
+            min-height: 100vh;
+            padding: 20px;
+        }
+
+        .flashcard {
+            perspective: 1000px;
+            height: 300px;
+            margin: 20px 0;
+        }
+
+        .flashcard-inner {
+            position: relative;
+            width: 100%;
+            height: 100%;
+            transition: transform 0.8s;
+            transform-style: preserve-3d;
+            cursor: pointer;
+        }
+
+        .flashcard.flipped .flashcard-inner {
+            transform: rotateY(180deg);
+        }
+
+        .flashcard-front, .flashcard-back {
+            position: absolute;
+            width: 100%;
+            height: 100%;
+            backface-visibility: hidden;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            flex-direction: column;
+            background: white;
+            border-radius: 15px;
+            box-shadow: 0 4px 15px rgba(0, 0, 0, 0.1);
+            padding: 20px;
+        }
+
+        .flashcard-back {
+            transform: rotateY(180deg);
+            background: #f8f9fa;
+        }
+
+        .card-content {
+            font-size: 2.5rem;
+            font-weight: 600;
+            color: #2c3e50;
+            text-align: center;
+            margin-bottom: 20px;
+        }
+
+        .control-icons {
+            display: flex;
+            gap: 15px;
+        }
+
+        .icon-button {
+            width: 45px;
+            height: 45px;
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            color: white;
+            background: var(--primary-color);
+            cursor: pointer;
+            transition: all 0.3s ease;
+            border: none;
+        }
+
+        .icon-button:hover {
+            transform: scale(1.1);
+            background: var(--accent-color);
+        }
+
+        .status-button {
+            padding: 10px 20px;
+            border-radius: 8px;
+            color: white;
+            border: none;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            font-weight: 500;
+        }
+
+        .known-button {
+            background: var(--success-color);
+        }
+
+        .unknown-button {
+            background: var(--warning-color);
+        }
+
+        .progress {
+            height: 10px;
+            border-radius: 5px;
+            margin: 20px 0;
+        }
+
+        .progress-bar {
+            background-color: var(--primary-color);
+        }
+
+        .navigation-buttons {
+            display: flex;
+            justify-content: space-between;
+            margin-top: 20px;
+        }
+
+        .btn-nav {
+            padding: 10px 25px;
+            font-weight: 500;
+        }
+
+        #answerFeedback {
+            margin-top: 10px;
+            font-weight: 500;
+        }
+
+        @media (max-width: 768px) {
+            .flashcard {
+                height: 250px;
+            }
+            
+            .card-content {
+                font-size: 2rem;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="container py-4">
+        <div class="row mb-4">
+            <div class="col-12">
+                <h1 class="text-center mb-4">Flashcards de vocabulaire</h1>
+                
+                <div class="alert alert-info text-center" role="alert">
+                    Cliquez sur la carte pour la retourner
+                </div>
+                
+                <div class="d-flex justify-content-between align-items-center mb-3">
+                    <div class="badge bg-primary fs-6">
+                        Carte <span id="currentCardNum">0</span> / <span id="totalCards">0</span>
+                    </div>
+                    <button class="btn btn-outline-primary" onclick="fetchFlashcards()">
+                        <i class="fas fa-sync-alt me-2"></i>Actualiser
+                    </button>
+                </div>
+                
+                <div class="progress">
+                    <div class="progress-bar" role="progressbar" style="width: 0%"></div>
+                </div>
+            </div>
+        </div>
+
+        <div class="row justify-content-center">
+            <div class="col-12 col-md-8">
+                <div class="flashcard" id="flashcard">
+                    <div class="flashcard-inner">
+                        <div class="flashcard-front">
+                            <div class="card-content" id="frontContent">Chargement...</div>
+                            <div class="control-icons">
+                                <button class="icon-button" onclick="playAudio('front')">
+                                    <i class="fas fa-volume-up"></i>
+                                </button>
+                            </div>
+                        </div>
+                        <div class="flashcard-back">
+                            <div class="card-content" id="backContent"></div>
+                            <div class="control-icons">
+                                <button class="icon-button" onclick="playAudio('back')">
+                                    <i class="fas fa-volume-up"></i>
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="d-flex justify-content-center gap-3 mb-4">
+                    <button class="status-button known-button" onclick="markAsKnown()">
+                        <i class="fas fa-check me-2"></i>Je connais
+                    </button>
+                    <button class="status-button unknown-button" onclick="markAsUnknown()">
+                        <i class="fas fa-times me-2"></i>Je ne connais pas
+                    </button>
+                </div>
+
+                <div class="navigation-buttons">
+                    <button class="btn btn-primary btn-nav" onclick="prevCard()" id="prevBtn">
+                        <i class="fas fa-chevron-left me-2"></i>Précédent
+                    </button>
+                    <button class="btn btn-primary btn-nav" onclick="nextCard()" id="nextBtn">
+                        Suivant<i class="fas fa-chevron-right ms-2"></i>
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        let currentCard = 0;
+        let cards = [];
+        const API_URL = 'https://flashcard-api-x0um.onrender.com/api/flashcards';
+
+        async function fetchFlashcards() {
+            try {
+                const response = await fetch(API_URL);
+                if (!response.ok) throw new Error('Erreur réseau');
+                cards = await response.json();
+                updateCardCount();
+                if (cards.length > 0) {
+                    currentCard = 0;
+                    showCard(currentCard);
+                }
+            } catch (error) {
+                console.error('Erreur:', error);
+                alert('Erreur lors du chargement des flashcards');
+            }
+        }
+
+        function showCard(index) {
+            if (cards.length === 0) return;
+            
+            const card = cards[index];
+            document.getElementById('frontContent').textContent = card.Francais;
+            document.getElementById('backContent').textContent = card.Anglais;
+            document.getElementById('currentCardNum').textContent = index + 1;
+            
+            updateProgress();
+            updateNavButtons();
+            
+            // Reset flip state
+            document.getElementById('flashcard').classList.remove('flipped');
+        }
+
+        function updateProgress() {
+            const progress = ((currentCard + 1) / cards.length) * 100;
+            document.querySelector('.progress-bar').style.width = `${progress}%`;
+        }
+
+        function updateCardCount() {
+            document.getElementById('totalCards').textContent = cards.length;
+        }
+
+        function updateNavButtons() {
+            document.getElementById('prevBtn').disabled = currentCard === 0;
+            document.getElementById('nextBtn').disabled = currentCard === cards.length - 1;
+        }
+
+        function prevCard() {
+            if (currentCard > 0) {
+                currentCard--;
+                showCard(currentCard);
+            }
+        }
+
+        function nextCard() {
+            if (currentCard < cards.length - 1) {
+                currentCard++;
+                showCard(currentCard);
+            }
+        }
+
+        function markAsKnown() {
+            // Ici vous pourriez ajouter la logique pour marquer une carte comme connue
+            nextCard();
+        }
+
+        function markAsUnknown() {
+            // Ici vous pourriez ajouter la logique pour marquer une carte comme non connue
+            nextCard();
+        }
+
+        function playAudio(side) {
+            const text = side === 'front' ? 
+                cards[currentCard].Francais : 
+                cards[currentCard].Anglais;
+            const utterance = new SpeechSynthesisUtterance(text);
+            utterance.lang = side === 'front' ? 'fr-FR' : 'en-US';
+            speechSynthesis.speak(utterance);
+        }
+
+        // Initialisation
+        document.addEventListener('DOMContentLoaded', function() {
+            fetchFlashcards();
+
+            document.getElementById('flashcard').addEventListener('click', function() {
+                this.classList.toggle('flipped');
+            });
+
+            // Raccourcis clavier
+            document.addEventListener('keydown', function(e) {
+                switch(e.key) {
+                    case 'ArrowLeft':
+                        prevCard();
+                        break;
+                    case 'ArrowRight':
+                        nextCard();
+                        break;
+                    case ' ':
+                        document.getElementById('flashcard').classList.toggle('flipped');
+                        e.preventDefault();
+                        break;
+                }
+            });
+        });
+    </script>
+</body>
+</html>
