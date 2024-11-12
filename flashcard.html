@@ -422,45 +422,6 @@
             }
         }
     
-        function showCard(index) {
-            const card = cards[index];
-            const displayOrder = document.getElementById('displayOrderSelect').value;
-            const frontElement = document.querySelector('.flashcard-front .card-content');
-            const backElement = document.querySelector('.flashcard-back .card-content');
-            const flashcard = document.getElementById('flashcard');
-    
-            flashcard.classList.remove('flipped');
-    
-            if (displayOrder === 'front') {
-                frontElement.textContent = card.front;
-                backElement.textContent = card.back;
-            } else {
-                frontElement.textContent = card.back;
-                backElement.textContent = card.front;
-            }
-    
-            // Mettre à jour le style en fonction du statut
-            updateCardStyle(card.status);
-            updateAudioHandlers(displayOrder);
-            document.getElementById('currentCardNum').textContent = index + 1;
-            document.getElementById('answerInput').value = '';
-            answerHistory = [];
-            historyIndex = -1;
-            updateNavButtons();
-            updateProgress();
-        }
-    
-        function updateCardStyle(status) {
-            const flashcard = document.getElementById('flashcard');
-            flashcard.className = 'flashcard'; // Reset classes
-            
-            // Ajouter la classe de statut
-            if (status === 'known') {
-                flashcard.classList.add('known-card');
-            } else if (status === 'unknown') {
-                flashcard.classList.add('unknown-card');
-            }
-        }
     
         function updateAudioHandlers(displayOrder) {
             const frontAudio = document.querySelector('.flashcard-front .icon-button');
@@ -489,15 +450,7 @@
             };
         }
     
-        function playAudio(event, text, language) {
-            const utterance = new SpeechSynthesisUtterance(text);
-            utterance.lang = language;
-            speechSynthesis.speak(utterance);
-    
-            const button = event.target.closest('.icon-button');
-            button.style.transform = 'scale(0.9)';
-            setTimeout(() => button.style.transform = '', 200);
-        }
+       
     
         // Fonction pour parser le fichier CSV et convertir en objets cartes
         function parseCSV(content) {
